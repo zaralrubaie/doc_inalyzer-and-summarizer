@@ -8,9 +8,8 @@ import json
 import re
 import os
 
-# ====== SET GROQ KEY  ======
-os.environ["GROQ_API_KEY2"] = "YOUR_GROQ_KEY_HERE"
-
+# ====== USE THE ENVIRONMENT VARIABLE FROM RENDER ======
+# IMPORTANT: Do NOT set the key in code.
 client = Groq(api_key=os.environ["GROQ_API_KEY2"])
 
 app = FastAPI()
@@ -41,11 +40,9 @@ def extract_pdf_text(pdf_bytes: bytes) -> str:
 
 # ====== CLEAN RAW MODEL OUTPUT TO EXTRACT JSON ======
 def extract_json(raw: str):
-    # Remove markdown code fences
     raw = re.sub(r"```.*?```", "", raw, flags=re.DOTALL)
     raw = raw.strip()
 
-    # Extract JSON object
     match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
     if match:
         return match.group(0)
@@ -103,8 +100,6 @@ Document text:
 @app.post("/analyze")
 async def analyze_document(file: UploadFile = File(...)):
     pdf_bytes = await file.read()
-
     text = extract_pdf_text(pdf_bytes)
     result = analyze_text_with_groq(text)
-
     return result
