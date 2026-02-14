@@ -8,10 +8,10 @@ import json
 import re
 import os
 
-# ====== SET YOUR GROQ KEY HERE ======
-os.environ["GROQ_API_KEY"] = "YOUR_GROQ_KEY_HERE"
+# ====== SET GROQ KEY  ======
+os.environ["GROQ_API_KEY2"] = "YOUR_GROQ_KEY_HERE"
 
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+client = Groq(api_key=os.environ["GROQ_API_KEY2"])
 
 app = FastAPI()
 
