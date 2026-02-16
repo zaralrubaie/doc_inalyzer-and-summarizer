@@ -39,9 +39,15 @@ def extract_pdf_text(pdf_bytes: bytes) -> str:
 
 # ====== CLEAN RAW MODEL OUTPUT ======
 def extract_json(raw: str):
-    raw = re.sub(r"```.*?```", "", raw, flags=re.DOTALL).strip()
-    match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
-    return match.group(0) if match else raw
+    # Remove markdown fences but keep the content inside
+    raw = raw.replace("```json", "").replace("```", "").strip()
+
+    # Extract the first JSON object
+    match = re.search(r"\{[\s\S]*\}", raw)
+    if match:
+        return match.group(0)
+
+    return raw
 
 # ====== GEMINI ANALYSIS ======
 def analyze_text_with_gemini(text: str, filename: str):
