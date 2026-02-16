@@ -1,16 +1,18 @@
-## this code will help in summaries and extract fields from any document linking it to google sheets, can do part of a admin job in some companies 
+## this code will help in summaries and extract fields from any document linking it to google sheets,
+## can do part of an admin job in some companies
+
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from groq import Groq
 from pypdf import PdfReader
+import google.generativeai as genai
 import io
 import json
 import re
 import os
 
-# ====== USE THE ENVIRONMENT VARIABLE FROM RENDER ======
-# IMPORTANT: Do NOT set the key in code.
-client = Groq(api_key=os.environ["GROQ_API_KEY2"])
+# ====== CONFIGURE GEMINI ======
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 app = FastAPI()
 
@@ -26,7 +28,7 @@ app.add_middleware(
 # ====== HEALTH CHECK ======
 @app.get("/")
 def health():
-    return {"status": "Document Analyzer API running"}
+    return {"status": "Document Analyzer API running (Gemini version)"}
 
 # ====== PDF TEXT EXTRACTION ======
 def extract_pdf_text(pdf_bytes: bytes) -> str:
@@ -48,8 +50,8 @@ def extract_json(raw: str):
         return match.group(0)
     return raw
 
-# ====== GROQ ANALYSIS ======
-def analyze_text_with_groq(text: str):
+# ====== GEMINI ANALYSIS ======
+def analyze_text_with_gemini(text: str):
     prompt = f"""
 You are an expert document analysis AI.
 
@@ -78,22 +80,18 @@ Document text:
 {text}
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
-
-    raw = response.choices[0].message.content
-    cleaned = extract_json(raw)
-
     try:
+        response = model.generate_content(prompt)
+        raw = response.text
+        cleaned = extract_json(raw)
         return json.loads(cleaned)
-    except:
+
+    except Exception as e:
         return {
-            "error": "Groq returned invalid JSON",
-            "raw_response": raw,
-            "cleaned_attempt": cleaned
+            "error": "Gemini returned invalid JSON",
+            "raw_response": str(response.text if 'response' in locals() else ''),
+            "cleaned_attempt": cleaned if 'cleaned' in locals() else '',
+            "exception": str(e)
         }
 
 # ====== MAIN API ENDPOINT ======
@@ -101,5 +99,5 @@ Document text:
 async def analyze_document(file: UploadFile = File(...)):
     pdf_bytes = await file.read()
     text = extract_pdf_text(pdf_bytes)
-    result = analyze_text_with_groq(text)
+    result = analyze_text_with_gemini(text)
     return result
