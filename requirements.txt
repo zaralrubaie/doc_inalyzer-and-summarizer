@@ -1,5 +1,6 @@
+google-generativeai
+pypdf
 fastapi
 uvicorn
-groq
-pypdf
 python-multipart
+pymupdf
